@@ -1,3 +1,3 @@
-#Main command
+# Main command
 
--npx expo start
+- npx expo start

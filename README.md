@@ -1,1 +1,3 @@
-npx expo start
+#Main command
+
+-npx expo start

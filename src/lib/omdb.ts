@@ -68,17 +68,3 @@ export async function getMovieDetails(imdbID: string): Promise<MovieDetails> {
   const data = await omdbGet({ i: imdbID, plot: "full" });
   return data as MovieDetails;
 }
-
-// Підтягує декілька фільмів за imdbID паралельно (ігноруючи окремі помилки)
-// і сортує за рейтингом IMDb — використовується для стрічки "Топ за рейтингом".
-export async function getMoviesByIds(imdbIDs: string[]): Promise<MovieDetails[]> {
-  const results = await Promise.allSettled(imdbIDs.map((id) => getMovieDetails(id)));
-
-  const movies = results
-    .filter(
-      (result): result is PromiseFulfilledResult<MovieDetails> => result.status === "fulfilled"
-    )
-    .map((result) => result.value);
-
-  return movies.sort((a, b) => parseFloat(b.imdbRating) - parseFloat(a.imdbRating));
-}

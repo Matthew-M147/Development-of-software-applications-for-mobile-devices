@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -10,44 +10,36 @@ import {
   View,
 } from "react-native";
 import { router } from "expo-router";
-import { MovieSummary, OmdbError, getMoviesByIds, searchMovies } from "../lib/omdb";
-import { CURATED_MOVIE_IDS } from "../lib/curatedMovies";
+import { MovieSummary, OmdbError, searchMovies } from "../lib/omdb";
 
 const ACCENT_COLOR = "#208AEF";
+
+// Поки користувач нічого не шукав, одразу показуємо результати цього
+// простого запиту — без жодного захардкодженого списку фільмів.
+const DEFAULT_QUERY = "movie";
 
 export default function SearchScreen() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<MovieSummary[]>([]);
   const [totalResults, setTotalResults] = useState(0);
   const [page, setPage] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [hasSearched, setHasSearched] = useState(false);
+  const [isDefault, setIsDefault] = useState(true);
 
-  // Стрічка "Топ за рейтингом", яку бачить користувач, поки нічого не шукав
-  const [featured, setFeatured] = useState<MovieSummary[]>([]);
-  const [isFeaturedLoading, setIsFeaturedLoading] = useState(true);
+  // Запит, за яким реально отримані поточні результати (потрібен для довантаження сторінок)
+  const activeQueryRef = useRef(DEFAULT_QUERY);
 
-  useEffect(() => {
-    getMoviesByIds(CURATED_MOVIE_IDS)
-      .then(setFeatured)
-      .catch(() => setFeatured([]))
-      .finally(() => setIsFeaturedLoading(false));
-  }, []);
-
-  async function runSearch() {
-    const trimmed = query.trim();
-    if (!trimmed) {
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-    setHasSearched(true);
+  // Виконує запит і оновлює результати. Не чіпає isLoading/error/isDefault
+  // синхронно, щоб виклик зі useEffect не тригерив react-hooks/set-state-in-effect —
+  // ці прапорці або вже мають потрібне значення (стан за замовчуванням),
+  // або їх виставляє викликач (handleSearchPress) перед викликом.
+  const performSearch = useCallback(async (searchTerm: string) => {
+    activeQueryRef.current = searchTerm;
 
     try {
-      const data = await searchMovies(trimmed, 1);
+      const data = await searchMovies(searchTerm, 1);
       setResults(data.results);
       setTotalResults(data.totalResults);
       setPage(1);
@@ -58,6 +50,38 @@ export default function SearchScreen() {
     } finally {
       setIsLoading(false);
     }
+  }, []);
+
+  // Пряма комбінація виклик+.then/.catch/.finally (а не виклик локальної
+  // useCallback-функції) — так лінтер коректно бачить, що setState
+  // відбувається лише в асинхронних колбеках, а не синхронно в тілі ефекту.
+  useEffect(() => {
+    activeQueryRef.current = DEFAULT_QUERY;
+
+    searchMovies(DEFAULT_QUERY, 1)
+      .then((data) => {
+        setResults(data.results);
+        setTotalResults(data.totalResults);
+        setPage(1);
+      })
+      .catch((err) => {
+        setResults([]);
+        setTotalResults(0);
+        setError(err instanceof OmdbError ? err.message : "Не вдалося виконати пошук");
+      })
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  function handleSearchPress() {
+    const trimmed = query.trim();
+    if (!trimmed) {
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    setIsDefault(false);
+    performSearch(trimmed);
   }
 
   const loadMore = useCallback(async () => {
@@ -69,7 +93,7 @@ export default function SearchScreen() {
     setIsLoadingMore(true);
 
     try {
-      const data = await searchMovies(query.trim(), nextPage);
+      const data = await searchMovies(activeQueryRef.current, nextPage);
       setResults((current) => [...current, ...data.results]);
       setPage(nextPage);
     } catch {
@@ -77,7 +101,7 @@ export default function SearchScreen() {
     } finally {
       setIsLoadingMore(false);
     }
-  }, [isLoadingMore, isLoading, results.length, totalResults, page, query]);
+  }, [isLoadingMore, isLoading, results.length, totalResults, page]);
 
   function openMovie(imdbID: string) {
     router.push({ pathname: "/movie/[id]", params: { id: imdbID } });
@@ -91,13 +115,13 @@ export default function SearchScreen() {
         <TextInput
           value={query}
           onChangeText={setQuery}
-          onSubmitEditing={runSearch}
+          onSubmitEditing={handleSearchPress}
           placeholder="Назва фільму..."
           placeholderTextColor="#8A8F9C"
           returnKeyType="search"
           style={styles.input}
         />
-        <Pressable style={styles.searchButton} onPress={runSearch}>
+        <Pressable style={styles.searchButton} onPress={handleSearchPress}>
           <Text style={styles.searchButtonText}>Пошук</Text>
         </Pressable>
       </View>
@@ -106,21 +130,8 @@ export default function SearchScreen() {
         <ActivityIndicator style={styles.spinner} color={ACCENT_COLOR} size="large" />
       ) : error ? (
         <Text style={styles.message}>{error}</Text>
-      ) : hasSearched && results.length === 0 ? (
+      ) : results.length === 0 ? (
         <Text style={styles.message}>Нічого не знайдено</Text>
-      ) : !hasSearched ? (
-        isFeaturedLoading ? (
-          <ActivityIndicator style={styles.spinner} color={ACCENT_COLOR} size="large" />
-        ) : (
-          <FlatList
-            data={featured}
-            keyExtractor={(item) => item.imdbID}
-            ListHeaderComponent={<Text style={styles.resultsCount}>🔥 Топ за рейтингом</Text>}
-            renderItem={({ item }) => (
-              <MovieRow item={item} onPress={() => openMovie(item.imdbID)} />
-            )}
-          />
-        )
       ) : (
         <FlatList
           data={results}
@@ -128,11 +139,9 @@ export default function SearchScreen() {
           onEndReachedThreshold={0.5}
           onEndReached={loadMore}
           ListHeaderComponent={
-            totalResults > 0 ? (
-              <Text style={styles.resultsCount}>
-                Знайдено: {totalResults}
-              </Text>
-            ) : null
+            <Text style={styles.resultsCount}>
+              {isDefault ? "Пропонуємо почати з:" : `Знайдено: ${totalResults}`}
+            </Text>
           }
           ListFooterComponent={
             isLoadingMore ? (

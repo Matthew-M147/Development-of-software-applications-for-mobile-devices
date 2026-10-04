@@ -1,56 +1,73 @@
-# Welcome 
+# timerMM — Pomodoro Timer
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Таймер [техніки Помодоро](https://en.wikipedia.org/wiki/Pomodoro_Technique) на Expo + React Native + TypeScript.
 
-## Get started
+## Можливості
 
-1. Install dependencies
+- Відображення хвилин і секунд, відлік до 00:00
+- Вібрація телефону, коли таймер досягає нуля
+- Перемикання між режимами "Робота" (25 хв) і "Перерва" (5 хв)
+- Старт, пауза, скидання таймера
+- Довільна тривалість кожного режиму (поле вводу + кнопки +/−)
 
-   ```bash
-   npm install
-   ```
+## Структура проєкту
 
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```
+App.tsx       — кореневий компонент із усією логікою таймера
+index.ts      — точка входу (registerRootComponent)
+utils.js      — функція vibrate() на базі Vibration з react-native
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Запуск
 
-### Other setup steps
+```bash
+npm install
+npx expo start
+```
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+Відкрити застосунок у [Expo Go](https://expo.dev/go) (QR-код), Android-емуляторі або iOS-симуляторі.
 
-## Learn more
+## Лінт і перевірка типів
 
-To learn more about developing your project with Expo, look at the following resources:
+```bash
+npx expo lint
+npx tsc --noEmit
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Умова лр
+# Проект 1 - Таймер Помодоро
+Метою цього проекту є створення таймера Pomodoro. Цей таймер допоможе людям, які намагаються використовувати [техніку Помодоро] (https://en.wikipedia.org/wiki/Pomodoro_Technique).
+Він вібруватиме, повідомляючи вам, коли робити перерви або відновлювати роботу, виходячи з деяких визначених значень.
 
-## Join the community
 
-Join our community of developers creating universal apps.
+## Вимоги
+- Ви не можете імпортувати інші бібліотеки, окрім наведених нижче:
+  - `expo`
+  - `react`
+  - `react-native`
+  - `prop-types`
+- Таймер повинен відображати хвилини та секунди
+- Таймер повинен відлічувати секунди, поки не досягне 00:00
+- Телефон повинен видавати сигнал, коли таймер досягає 0
+- Таймери повинні перемикатись між 25 і 5 хвилинами
+- Повинна бути можливість запускати, зупиняти та скидати таймер
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Естетика програми залежить від вас!
+
+- Дозволити користувачеві вводити будь-який довільний час для таймерів (наприклад, 5 хвилин робочого часу та 5 хвилин перерви)
+
+## Починаємо
+Спочатку перейдіть до цього посилання: (https://docs.expo.io/get-started/installation), щоб встановити Expo. Вам знадобиться Expo CLI для вашого комп’ютера та мобільний клієнт (програма Expo) на вашому телефоні. Якщо ви бажаєте, ви також можете встановити симулятор iOS (лише для Mac) та / або емулятор Android.
+
+Вам також знадобляться встановлені Node.js та NPM. Ви можете перевірити, чи вони вже встановлені, відкривши термінал і запустивши `node --version` та` npm --version`.
+Якщо ні, встановіть їх (https://nodejs.org/en/). NPM буде встановлено автоматично під час встановлення node.
+
+Після встановлення цих програмних залежностей вам потрібно буде встановити "залежності" вашого додатка (бібліотеки, необхідні для запуску програми, такі як `react`,`react-native` тощо). Це зробити дуже просто! З терміналу "cd" перейдіть у цей каталог і запустіть команду "npm install". NPM розгляне `залежності` з файлу `package.json` (/ package.json) і встановить ці бібліотеки, а також усі залежності цих бібліотек (і залежності залежностей тощо).
+
+Тепер ви можете почати працювати над своїм додатком. Вам може виявитися корисною функція вібрації в [`/ utils`] (/ utils). Не соромтеся імпортувати та використовувати її у своєму додатку так:
+`` javascript
+import {vibrate} from './utils'
+// змушує телефон вібрувати
+vibrate()
+
+ Удачі!

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import { vibrate } from "../../utils";
+import { vibrate } from "./utils";
 
 type Mode = "work" | "break";
 
@@ -9,7 +9,7 @@ const MAX_MINUTES = 180;
 const WORK_COLOR = "#FF6B5B";
 const BREAK_COLOR = "#3DD6B0";
 
-export default function HomeScreen() {
+export default function App() {
   // Скільки хвилин триває кожен режим (можна змінювати на картках знизу)
   const [workMinutes, setWorkMinutes] = useState(25);
   const [breakMinutes, setBreakMinutes] = useState(5);

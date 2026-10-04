@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -10,7 +10,8 @@ import {
   View,
 } from "react-native";
 import { router } from "expo-router";
-import { MovieSummary, OmdbError, searchMovies } from "../lib/omdb";
+import { MovieSummary, OmdbError, getMoviesByIds, searchMovies } from "../lib/omdb";
+import { CURATED_MOVIE_IDS } from "../lib/curatedMovies";
 
 const ACCENT_COLOR = "#208AEF";
 
@@ -23,6 +24,17 @@ export default function SearchScreen() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
+
+  // Стрічка "Топ за рейтингом", яку бачить користувач, поки нічого не шукав
+  const [featured, setFeatured] = useState<MovieSummary[]>([]);
+  const [isFeaturedLoading, setIsFeaturedLoading] = useState(true);
+
+  useEffect(() => {
+    getMoviesByIds(CURATED_MOVIE_IDS)
+      .then(setFeatured)
+      .catch(() => setFeatured([]))
+      .finally(() => setIsFeaturedLoading(false));
+  }, []);
 
   async function runSearch() {
     const trimmed = query.trim();
@@ -96,6 +108,19 @@ export default function SearchScreen() {
         <Text style={styles.message}>{error}</Text>
       ) : hasSearched && results.length === 0 ? (
         <Text style={styles.message}>Нічого не знайдено</Text>
+      ) : !hasSearched ? (
+        isFeaturedLoading ? (
+          <ActivityIndicator style={styles.spinner} color={ACCENT_COLOR} size="large" />
+        ) : (
+          <FlatList
+            data={featured}
+            keyExtractor={(item) => item.imdbID}
+            ListHeaderComponent={<Text style={styles.resultsCount}>🔥 Топ за рейтингом</Text>}
+            renderItem={({ item }) => (
+              <MovieRow item={item} onPress={() => openMovie(item.imdbID)} />
+            )}
+          />
+        )
       ) : (
         <FlatList
           data={results}
@@ -115,26 +140,32 @@ export default function SearchScreen() {
             ) : null
           }
           renderItem={({ item }) => (
-            <Pressable style={styles.row} onPress={() => openMovie(item.imdbID)}>
-              {item.Poster && item.Poster !== "N/A" ? (
-                <Image source={{ uri: item.Poster }} style={styles.poster} />
-              ) : (
-                <View style={[styles.poster, styles.posterPlaceholder]}>
-                  <Text style={styles.posterPlaceholderText}>Немає{"\n"}постера</Text>
-                </View>
-              )}
-
-              <View style={styles.rowInfo}>
-                <Text style={styles.rowTitle}>{item.Title}</Text>
-                <Text style={styles.rowSubtitle}>
-                  {item.Year} · {item.Type}
-                </Text>
-              </View>
-            </Pressable>
+            <MovieRow item={item} onPress={() => openMovie(item.imdbID)} />
           )}
         />
       )}
     </View>
+  );
+}
+
+function MovieRow({ item, onPress }: { item: MovieSummary; onPress: () => void }) {
+  return (
+    <Pressable style={styles.row} onPress={onPress}>
+      {item.Poster && item.Poster !== "N/A" ? (
+        <Image source={{ uri: item.Poster }} style={styles.poster} />
+      ) : (
+        <View style={[styles.poster, styles.posterPlaceholder]}>
+          <Text style={styles.posterPlaceholderText}>Немає{"\n"}постера</Text>
+        </View>
+      )}
+
+      <View style={styles.rowInfo}>
+        <Text style={styles.rowTitle}>{item.Title}</Text>
+        <Text style={styles.rowSubtitle}>
+          {item.Year} · {item.Type}
+        </Text>
+      </View>
+    </Pressable>
   );
 }
 

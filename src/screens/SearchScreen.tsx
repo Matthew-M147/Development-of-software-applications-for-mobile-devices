@@ -9,8 +9,9 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { router } from "expo-router";
+import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { MovieSummary, OmdbError, searchMovies } from "../lib/omdb";
+import type { RootStackParamList } from "../../App";
 
 const ACCENT_COLOR = "#208AEF";
 
@@ -18,7 +19,9 @@ const ACCENT_COLOR = "#208AEF";
 // простого запиту — без жодного захардкодженого списку фільмів.
 const DEFAULT_QUERY = "movie";
 
-export default function SearchScreen() {
+type Props = NativeStackScreenProps<RootStackParamList, "Search">;
+
+export default function SearchScreen({ navigation }: Props) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<MovieSummary[]>([]);
   const [totalResults, setTotalResults] = useState(0);
@@ -104,7 +107,7 @@ export default function SearchScreen() {
   }, [isLoadingMore, isLoading, results.length, totalResults, page]);
 
   function openMovie(imdbID: string) {
-    router.push({ pathname: "/movie/[id]", params: { id: imdbID } });
+    navigation.navigate("MovieDetails", { id: imdbID });
   }
 
   return (
